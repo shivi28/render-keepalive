@@ -1,0 +1,26 @@
+name: Keep Render backend awake
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # every 10 minutes (UTC)
+  workflow_dispatch:          # adds a manual "Run workflow" button
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping backend
+        env:
+          BACKEND_URL: ${{ secrets.RENDER_BACKEND_URL }}
+          PING_TOKEN: ${{ secrets.PING_TOKEN }}
+        run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "RENDER_BACKEND_URL secret is not set"; exit 1
+          fi
+          curl --fail --silent --show-error \
+               --max-time 90 --retry 3 --retry-delay 10 \
+               -H "X-Ping-Token: $PING_TOKEN" \
+               "$BACKEND_URL/health"
+          echo
+          echo "Pinged at $(date -u)"
